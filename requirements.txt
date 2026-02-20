@@ -1,0 +1,8 @@
+requests
+beautifulsoup4
+pandas
+fpdf
+textblob
+yfinance
+ta
+playwright
