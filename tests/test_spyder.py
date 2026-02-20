@@ -14,6 +14,7 @@ class TestFinancialSpyder(unittest.TestCase):
         self.pdf_file = 'test_report.pdf'
         self.spider = FinancialSpyder(
             start_url='http://test.com',
+            ticker='TEST',
             csv_file=self.csv_file,
             pdf_file=self.pdf_file,
             max_depth=1,
