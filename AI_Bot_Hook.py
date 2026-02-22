@@ -1,6 +1,5 @@
 from playwright.sync_api import sync_playwright
 import os
-import sys
 
 def hook_bot():
     print("========================================")
