@@ -198,12 +198,30 @@ Verdict & Prediction:
         print("AI Briefing saved to 'ai_briefing.txt'. Use this to prompt your AI bot.")
         return prompt
 
+    def _sanitize_for_csv(self, value):
+        """
+        Sanitizes a value for CSV export to prevent Formula Injection.
+        Prepends a single quote if the value starts with dangerous characters.
+        """
+        if isinstance(value, str) and value:
+            # Dangerous characters that can trigger formula execution in spreadsheet software
+            dangerous_chars = ('=', '+', '-', '@', '\t', '\r')
+            if value[0] in dangerous_chars:
+                return "'" + value
+        return value
+
     def save_csv(self):
         if not self.data:
             print("No data to save to CSV.")
             return
 
-        df = pd.DataFrame(self.data)
+        # Create a copy of the data to sanitize before saving
+        sanitized_data = []
+        for row in self.data:
+            sanitized_row = {k: self._sanitize_for_csv(v) for k, v in row.items()}
+            sanitized_data.append(sanitized_row)
+
+        df = pd.DataFrame(sanitized_data)
         df.to_csv(self.csv_file, index=False)
         print(f"Data saved to {self.csv_file}")
 
