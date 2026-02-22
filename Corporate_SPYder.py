@@ -14,6 +14,7 @@ import os
 class FinancialSpyder:
     def __init__(self, start_url, ticker, csv_file, pdf_file, max_depth=2, max_pages=10):
         self.start_url = start_url
+        self.start_url_parsed = urlparse(start_url)
         self.ticker = ticker
         self.csv_file = csv_file
         self.pdf_file = pdf_file
@@ -56,10 +57,9 @@ class FinancialSpyder:
                     for link in soup.find_all('a', href=True):
                         next_url = urljoin(url, link['href'])
                         # Only follow http/https links and stay on same domain
-                        parsed_start = urlparse(self.start_url)
                         parsed_next = urlparse(next_url)
 
-                        if parsed_next.scheme in ['http', 'https'] and parsed_next.netloc == parsed_start.netloc:
+                        if parsed_next.scheme in ['http', 'https'] and parsed_next.netloc == self.start_url_parsed.netloc:
                             if next_url not in self.visited:
                                 queue.append((next_url, depth + 1))
 
