@@ -4,13 +4,13 @@ from .reporter import Reporter
 from . import config
 
 class FinancialSpyder:
-    def __init__(self, start_url, ticker, csv_file, pdf_file):
+    def __init__(self, start_url, ticker, csv_file, pdf_file, max_depth=config.FREE_MAX_DEPTH, max_pages=config.FREE_MAX_PAGES):
         self.start_url = start_url
         self.ticker = ticker
         self.csv_file = csv_file
         self.pdf_file = pdf_file
-        self.max_depth = config.FREE_MAX_DEPTH
-        self.max_pages = config.FREE_MAX_PAGES
+        self.max_depth = max_depth
+        self.max_pages = max_pages
         self.crawler = None
         self.analyzer = None
         self.reporter = None
@@ -54,11 +54,6 @@ class FinancialSpyder:
         return "Base"
 
 class FreeSpyder(FinancialSpyder):
-    def __init__(self, start_url, ticker, csv_file, pdf_file):
-        super().__init__(start_url, ticker, csv_file, pdf_file)
-        self.max_depth = config.FREE_MAX_DEPTH
-        self.max_pages = config.FREE_MAX_PAGES
-
     def get_history_period(self):
         return "1y"
 
@@ -67,9 +62,7 @@ class FreeSpyder(FinancialSpyder):
 
 class PremiumSpyder(FinancialSpyder):
     def __init__(self, start_url, ticker, csv_file, pdf_file):
-        super().__init__(start_url, ticker, csv_file, pdf_file)
-        self.max_depth = config.PREMIUM_MAX_DEPTH
-        self.max_pages = config.PREMIUM_MAX_PAGES
+        super().__init__(start_url, ticker, csv_file, pdf_file, max_depth=config.PREMIUM_MAX_DEPTH, max_pages=config.PREMIUM_MAX_PAGES)
 
     def get_history_period(self):
         return "max"
