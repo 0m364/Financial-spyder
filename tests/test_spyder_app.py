@@ -53,8 +53,10 @@ class TestSpyderApp(unittest.TestCase):
     def test_web_crawler(self):
         crawler = WebCrawler(self.start_url)
 
-        # Mock requests.get
-        with patch('spyder_app.crawler.requests.get') as mock_get:
+        # Mock requests.get and is_safe_url
+        with patch('spyder_app.crawler.requests.get') as mock_get, \
+             patch('spyder_app.crawler.is_safe_url') as mock_is_safe_url:
+            mock_is_safe_url.return_value = True
             mock_response = MagicMock()
             mock_response.content = b'<html><h1>Headline</h1></html>'
             mock_get.return_value = mock_response
@@ -142,6 +144,36 @@ class TestSpyderApp(unittest.TestCase):
             reporter.technicals['Prediction_Score'] = 80
             reporter.generate_pdf('test_premium.pdf', tier='Premium')
             MockFPDF.return_value.output.assert_called_with('test_premium.pdf')
+
+    def test_is_safe_url(self):
+        from spyder_app.crawler import is_safe_url
+
+        # Test valid public URLs
+        with patch('spyder_app.crawler.socket.gethostbyname') as mock_gethost:
+            mock_gethost.return_value = '8.8.8.8'
+            self.assertTrue(is_safe_url('https://google.com'))
+            self.assertTrue(is_safe_url('http://example.com/path'))
+
+            # Test private/loopback/invalid URLs
+            mock_gethost.return_value = '127.0.0.1'
+            self.assertFalse(is_safe_url('http://localhost:8080'))
+
+            mock_gethost.return_value = '192.168.1.1'
+            self.assertFalse(is_safe_url('http://192.168.1.1/admin'))
+
+            mock_gethost.return_value = '10.0.0.5'
+            self.assertFalse(is_safe_url('https://internal.corp.local'))
+
+            # Test invalid scheme
+            mock_gethost.return_value = '8.8.8.8'
+            self.assertFalse(is_safe_url('ftp://example.com'))
+            self.assertFalse(is_safe_url('file:///etc/passwd'))
+
+            # Test empty hostname or exceptions
+            self.assertFalse(is_safe_url('http://'))
+
+            mock_gethost.side_effect = Exception("Resolution failed")
+            self.assertFalse(is_safe_url('http://nonexistent.domain.local'))
 
     def test_factor_tagging(self):
         crawler = WebCrawler(self.start_url)

@@ -2,7 +2,35 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import time
+import socket
+import ipaddress
 from .analyzer import SentimentAnalyzer
+
+def is_safe_url(url):
+    """
+    Validates a URL to prevent Server-Side Request Forgery (SSRF) and related vulnerabilities.
+    It checks if the scheme is http/https and ensures the resolved IP is not a private, loopback,
+    link-local, or multicast address.
+    """
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            return False
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+
+        ip = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(ip)
+
+        if (ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or
+            ip_obj.is_multicast or ip_obj.is_unspecified or ip_obj.is_reserved):
+            return False
+
+        return True
+    except Exception:
+        return False
 
 class WebCrawler:
     def __init__(self, start_url, max_depth=2, max_pages=10):
@@ -36,9 +64,21 @@ class WebCrawler:
                 continue
 
             print(f"Crawling: {url} (Depth: {depth})")
+            if not is_safe_url(url):
+                print(f"Skipping unsafe URL: {url}")
+                continue
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                response = requests.get(url, headers=headers, timeout=10)
+                response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
+
+                if response.status_code in (301, 302, 303, 307, 308):
+                    redirect_url = urljoin(url, response.headers.get('Location', ''))
+                    if redirect_url and redirect_url not in self.visited:
+                        parsed_redirect = urlparse(redirect_url)
+                        if parsed_redirect.scheme in ['http', 'https'] and parsed_redirect.netloc == self.start_url_parsed.netloc:
+                            queue.append((redirect_url, depth))
+                    continue
+
                 response.raise_for_status()
 
                 self.visited.add(url)
