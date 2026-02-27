@@ -2,9 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import time
+import re
 from .analyzer import SentimentAnalyzer
 
 class WebCrawler:
+    GEO_REGEX = re.compile('|'.join(['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty']))
+    ENV_REGEX = re.compile('|'.join(['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']))
+
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
         self.start_url_parsed = urlparse(start_url)
@@ -72,12 +76,12 @@ class WebCrawler:
                 # Tag factors
                 text_lower = text.lower()
                 tags = []
-                if any(w in text_lower for w in ['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty']):
+                if self.GEO_REGEX.search(text_lower):
                     tags.append('Geopolitical')
                     self.factors['Geopolitical'] += sentiment
                     self.factors['Count_Geo'] += 1
 
-                if any(w in text_lower for w in ['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']):
+                if self.ENV_REGEX.search(text_lower):
                     tags.append('Environmental')
                     self.factors['Environmental'] += sentiment
                     self.factors['Count_Env'] += 1
