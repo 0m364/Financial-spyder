@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import time
+import socket
+import ipaddress
 from .analyzer import SentimentAnalyzer
 
 class WebCrawler:
@@ -23,6 +25,29 @@ class WebCrawler:
             'Count_Env': 0
         }
 
+    def is_safe_url(self, url):
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme not in ['http', 'https']:
+                return False
+
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+
+            # Resolve the hostname to an IP address
+            ip_str = socket.gethostbyname(hostname)
+            ip_obj = ipaddress.ip_address(ip_str)
+
+            # Check if the IP is global (public) and not a loopback/private/link-local address
+            if not ip_obj.is_global or ip_obj.is_loopback or ip_obj.is_private or ip_obj.is_link_local:
+                return False
+
+            return True
+        except (socket.gaierror, ValueError):
+            # If the hostname cannot be resolved or IP is invalid
+            return False
+
     def crawl(self):
         queue = [(self.start_url, 0)]
 
@@ -36,6 +61,10 @@ class WebCrawler:
                 continue
 
             print(f"Crawling: {url} (Depth: {depth})")
+            if not self.is_safe_url(url):
+                print(f"Error crawling {url}: Blocked unsafe URL")
+                continue
+
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                 response = requests.get(url, headers=headers, timeout=10)

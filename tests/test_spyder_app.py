@@ -53,46 +53,48 @@ class TestSpyderApp(unittest.TestCase):
     def test_web_crawler(self):
         crawler = WebCrawler(self.start_url)
 
-        # Mock requests.get
-        with patch('spyder_app.crawler.requests.get') as mock_get:
-            mock_response = MagicMock()
-            mock_response.content = b'<html><h1>Headline</h1></html>'
-            mock_get.return_value = mock_response
+        # Mock is_safe_url to bypass security check during this test
+        with patch.object(crawler, 'is_safe_url', return_value=True):
+            # Mock requests.get
+            with patch('spyder_app.crawler.requests.get') as mock_get:
+                mock_response = MagicMock()
+                mock_response.content = b'<html><h1>Headline</h1></html>'
+                mock_get.return_value = mock_response
 
-            # Mock BeautifulSoup
-            with patch('spyder_app.crawler.BeautifulSoup') as MockBS:
-                mock_soup = MagicMock()
-                mock_headline = MagicMock()
-                mock_headline.get_text.return_value = "Headline"
+                # Mock BeautifulSoup
+                with patch('spyder_app.crawler.BeautifulSoup') as MockBS:
+                    mock_soup = MagicMock()
+                    mock_headline = MagicMock()
+                    mock_headline.get_text.return_value = "Headline"
 
-                # The mock setup for find_all is tricky because it's called with different args
-                # Let's simplify and just rely on the fact that the code handles empty lists
-                mock_soup.find_all.return_value = [mock_headline]
-                # This will make crawl think [mock_headline] are links too, but since they don't have href, it should be fine?
-                # Actually, if we return [mock_headline] for everything, the loop `for link in soup.find_all('a', href=True):`
-                # will try to access link['href'].
+                    # The mock setup for find_all is tricky because it's called with different args
+                    # Let's simplify and just rely on the fact that the code handles empty lists
+                    mock_soup.find_all.return_value = [mock_headline]
+                    # This will make crawl think [mock_headline] are links too, but since they don't have href, it should be fine?
+                    # Actually, if we return [mock_headline] for everything, the loop `for link in soup.find_all('a', href=True):`
+                    # will try to access link['href'].
 
-                mock_headline.__getitem__ = MagicMock(return_value="http://test.com/next")
+                    mock_headline.__getitem__ = MagicMock(return_value="http://test.com/next")
 
-                # Mock SentimentAnalyzer
-                with patch('spyder_app.crawler.SentimentAnalyzer') as MockSA:
-                    crawler.sentiment_analyzer = MockSA.return_value
-                    crawler.sentiment_analyzer.analyze.return_value = 0.8
+                    # Mock SentimentAnalyzer
+                    with patch('spyder_app.crawler.SentimentAnalyzer') as MockSA:
+                        crawler.sentiment_analyzer = MockSA.return_value
+                        crawler.sentiment_analyzer.analyze.return_value = 0.8
 
-                    # We need to ensure find_all behaves correctly for different calls
-                    # But since we can't easily side_effect based on args with MagicMock simple setup
-                    # Let's override extract_data for this test to avoid the complexity of mocking soup completely
+                        # We need to ensure find_all behaves correctly for different calls
+                        # But since we can't easily side_effect based on args with MagicMock simple setup
+                        # Let's override extract_data for this test to avoid the complexity of mocking soup completely
 
-                    crawler.extract_data = MagicMock()
+                        crawler.extract_data = MagicMock()
 
-                    # But we want to test extract_data integration?
-                    # Let's skip the deep integration test of extract_data inside crawl
-                    # and assume extract_data is unit tested separately (which it is in test_extract_data.py)
-                    # So we just test that crawl calls extract_data
+                        # But we want to test extract_data integration?
+                        # Let's skip the deep integration test of extract_data inside crawl
+                        # and assume extract_data is unit tested separately (which it is in test_extract_data.py)
+                        # So we just test that crawl calls extract_data
 
-                    crawler.crawl()
+                        crawler.crawl()
 
-                    crawler.extract_data.assert_called()
+                        crawler.extract_data.assert_called()
 
     def test_premium_analysis_logic(self):
         spyder = PremiumSpyder(self.start_url, self.ticker, self.csv_file, self.pdf_file)
