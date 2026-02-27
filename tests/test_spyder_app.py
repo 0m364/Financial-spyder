@@ -56,7 +56,7 @@ class TestSpyderApp(unittest.TestCase):
         # Mock requests.get
         with patch('spyder_app.crawler.requests.get') as mock_get:
             mock_response = MagicMock()
-            mock_response.content = b'<html><h1>Headline</h1></html>'
+            mock_response.iter_content.return_value = [b'<html><h1>Headline</h1></html>']
             mock_get.return_value = mock_response
 
             # Mock BeautifulSoup

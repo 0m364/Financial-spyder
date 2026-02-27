@@ -38,23 +38,40 @@ class WebCrawler:
             print(f"Crawling: {url} (Depth: {depth})")
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                response = requests.get(url, headers=headers, timeout=10)
-                response.raise_for_status()
+                with requests.get(url, headers=headers, timeout=10, stream=True) as response:
+                    response.raise_for_status()
 
-                self.visited.add(url)
-                self.page_count += 1
+                    content = []
+                    downloaded_size = 0
+                    max_size = 10 * 1024 * 1024  # 10 MB limit
 
-                soup = BeautifulSoup(response.content, 'html.parser')
-                self.extract_data(soup, url)
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            downloaded_size += len(chunk)
+                            if downloaded_size > max_size:
+                                print(f"Skipping {url}: Response exceeded 10MB limit.")
+                                content = None
+                                break
+                            content.append(chunk)
 
-                if depth < self.max_depth:
-                    for link in soup.find_all('a', href=True):
-                        next_url = urljoin(url, link['href'])
-                        parsed_next = urlparse(next_url)
+                    if content is None:
+                        self.visited.add(url)
+                        continue
 
-                        if parsed_next.scheme in ['http', 'https'] and parsed_next.netloc == self.start_url_parsed.netloc:
-                            if next_url not in self.visited:
-                                queue.append((next_url, depth + 1))
+                    self.visited.add(url)
+                    self.page_count += 1
+
+                    soup = BeautifulSoup(b"".join(content), 'html.parser')
+                    self.extract_data(soup, url)
+
+                    if depth < self.max_depth:
+                        for link in soup.find_all('a', href=True):
+                            next_url = urljoin(url, link['href'])
+                            parsed_next = urlparse(next_url)
+
+                            if parsed_next.scheme in ['http', 'https'] and parsed_next.netloc == self.start_url_parsed.netloc:
+                                if next_url not in self.visited:
+                                    queue.append((next_url, depth + 1))
 
                 time.sleep(1)
 
