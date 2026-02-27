@@ -41,6 +41,41 @@ class TestSpyderApp(unittest.TestCase):
         self.assertEqual(spyder.max_depth, config.PREMIUM_MAX_DEPTH)
         self.assertEqual(spyder.get_history_period(), "max")
 
+    def test_technical_analyzer_fetch_history_empty(self):
+        analyzer = TechnicalAnalyzer('TEST')
+        with patch('spyder_app.analyzer.yf.Ticker') as MockTicker:
+            mock_ticker_instance = MockTicker.return_value
+            mock_data = MagicMock()
+            mock_data.empty = True
+            mock_ticker_instance.history.return_value = mock_data
+
+            result = analyzer.fetch_history()
+
+            self.assertFalse(result)
+            self.assertTrue(analyzer.data.empty)
+
+    def test_technical_analyzer_fetch_history_success(self):
+        analyzer = TechnicalAnalyzer('TEST')
+        with patch('spyder_app.analyzer.yf.Ticker') as MockTicker:
+            mock_ticker_instance = MockTicker.return_value
+            mock_data = MagicMock()
+            mock_data.empty = False
+            mock_ticker_instance.history.return_value = mock_data
+
+            result = analyzer.fetch_history()
+
+            self.assertTrue(result)
+            self.assertFalse(analyzer.data.empty)
+
+    def test_technical_analyzer_fetch_history_exception(self):
+        analyzer = TechnicalAnalyzer('TEST')
+        with patch('spyder_app.analyzer.yf.Ticker') as MockTicker:
+            MockTicker.side_effect = Exception("API Error")
+
+            result = analyzer.fetch_history()
+
+            self.assertFalse(result)
+
     def test_sentiment_analyzer(self):
         analyzer = SentimentAnalyzer()
         # Mock TextBlob
