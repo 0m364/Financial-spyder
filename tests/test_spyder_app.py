@@ -181,6 +181,27 @@ class TestSpyderApp(unittest.TestCase):
             reporter.generate_pdf('test_premium.pdf', tier='Premium')
             MockFPDF.return_value.output.assert_called_with('test_premium.pdf')
 
+    def test_sanitize_for_csv(self):
+        reporter = Reporter('TEST', [], {}, [], "")
+
+        # Test dangerous characters
+        self.assertEqual(reporter._sanitize_for_csv('=SUM(A1:B1)'), "'=SUM(A1:B1)")
+        self.assertEqual(reporter._sanitize_for_csv('+1'), "'+1")
+        self.assertEqual(reporter._sanitize_for_csv('-1'), "'-1")
+        self.assertEqual(reporter._sanitize_for_csv('@something'), "'@something")
+        self.assertEqual(reporter._sanitize_for_csv('\tvalue'), "'\tvalue")
+        self.assertEqual(reporter._sanitize_for_csv('\rvalue'), "'\rvalue")
+
+        # Test safe strings
+        self.assertEqual(reporter._sanitize_for_csv('Normal string'), "Normal string")
+        self.assertEqual(reporter._sanitize_for_csv('123'), "123")
+
+        # Test non-string/empty values
+        self.assertEqual(reporter._sanitize_for_csv(''), "")
+        self.assertEqual(reporter._sanitize_for_csv(None), None)
+        self.assertEqual(reporter._sanitize_for_csv(123), 123)
+        self.assertEqual(reporter._sanitize_for_csv(45.6), 45.6)
+
     def test_factor_tagging(self):
         crawler = WebCrawler(self.start_url)
 
