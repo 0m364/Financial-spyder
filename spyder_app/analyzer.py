@@ -81,12 +81,3 @@ class TechnicalAnalyzer:
             'Stoch_D': latest['Stoch_D'],
             'ATR': latest['ATR']
         })
-
-    def get_market_condition(self):
-        if not self.technicals:
-            return "Unknown"
-        price = self.technicals.get('Current_Price', 0)
-        sma200 = self.technicals.get('SMA_200', 0)
-        if price > sma200:
-            return "Bullish"
-        return "Bearish"
