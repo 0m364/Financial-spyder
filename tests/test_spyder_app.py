@@ -50,13 +50,16 @@ class TestSpyderApp(unittest.TestCase):
             score = analyzer.analyze("Good news")
             self.assertEqual(score, 0.5)
 
-    def test_web_crawler(self):
+    @patch('spyder_app.crawler.is_safe_url')
+    def test_web_crawler(self, mock_is_safe_url):
+        mock_is_safe_url.return_value = True
         crawler = WebCrawler(self.start_url)
 
         # Mock requests.get
         with patch('spyder_app.crawler.requests.get') as mock_get:
             mock_response = MagicMock()
             mock_response.content = b'<html><h1>Headline</h1></html>'
+            mock_response.is_redirect = False
             mock_get.return_value = mock_response
 
             # Mock BeautifulSoup

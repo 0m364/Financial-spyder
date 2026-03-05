@@ -2,7 +2,37 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import time
+import socket
+import ipaddress
 from .analyzer import SentimentAnalyzer
+
+def is_safe_url(url):
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+
+        # Resolve hostname (supports IPv4 and IPv6)
+        try:
+            addrinfo = socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            return False
+
+        for result in addrinfo:
+            ip_addr = result[4][0]
+            ip = ipaddress.ip_address(ip_addr)
+
+            # Check if any resolved IP is private, loopback, or link-local
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                return False
+
+        return True
+    except Exception:
+        return False
 
 class WebCrawler:
     def __init__(self, start_url, max_depth=2, max_pages=10):
@@ -35,10 +65,32 @@ class WebCrawler:
             if depth > self.max_depth:
                 continue
 
+            if not is_safe_url(url):
+                print(f"Skipping unsafe URL: {url}")
+                continue
+
             print(f"Crawling: {url} (Depth: {depth})")
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                response = requests.get(url, headers=headers, timeout=10)
+                # Avoid SSRF redirect bypass by disabling auto redirects
+                response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
+
+                # Manually handle redirects securely
+                redirect_count = 0
+                while response.is_redirect and redirect_count < 5:
+                    next_url = response.headers.get('Location')
+                    next_url = urljoin(url, next_url)
+
+                    if not is_safe_url(next_url):
+                        print(f"Skipping unsafe redirect URL: {next_url}")
+                        break
+
+                    response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False)
+                    redirect_count += 1
+
+                if response.is_redirect:
+                    continue
+
                 response.raise_for_status()
 
                 self.visited.add(url)
