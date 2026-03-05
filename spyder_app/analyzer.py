@@ -2,7 +2,6 @@ import pandas as pd
 import yfinance as yf
 import ta
 from textblob import TextBlob
-import datetime
 
 class SentimentAnalyzer:
     def analyze(self, text):
