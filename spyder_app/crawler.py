@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlparse
 import time
 import socket
 import ipaddress
+import re
 from .analyzer import SentimentAnalyzer
 
 def is_safe_url(url):
@@ -35,6 +36,12 @@ def is_safe_url(url):
         return False
 
 class WebCrawler:
+    GEOPOLITICAL_KEYWORDS = ['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty']
+    ENVIRONMENTAL_KEYWORDS = ['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']
+
+    GEOPOLITICAL_RE = re.compile('|'.join(GEOPOLITICAL_KEYWORDS))
+    ENVIRONMENTAL_RE = re.compile('|'.join(ENVIRONMENTAL_KEYWORDS))
+
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
         self.start_url_parsed = urlparse(start_url)
@@ -124,12 +131,12 @@ class WebCrawler:
                 # Tag factors
                 text_lower = text.lower()
                 tags = []
-                if any(w in text_lower for w in ['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty']):
+                if self.GEOPOLITICAL_RE.search(text_lower):
                     tags.append('Geopolitical')
                     self.factors['Geopolitical'] += sentiment
                     self.factors['Count_Geo'] += 1
 
-                if any(w in text_lower for w in ['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']):
+                if self.ENVIRONMENTAL_RE.search(text_lower):
                     tags.append('Environmental')
                     self.factors['Environmental'] += sentiment
                     self.factors['Count_Env'] += 1
