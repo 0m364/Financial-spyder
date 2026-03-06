@@ -18,30 +18,31 @@ sys.modules['requests'] = MagicMock()
 sys.modules['bs4'] = MagicMock()
 
 from spyder_app.crawler import is_safe_url, WebCrawler
+import socket
 
 class TestSSRFCrawler(unittest.TestCase):
 
-    @patch('socket.gethostbyname')
-    def test_is_safe_url_public(self, mock_gethostbyname):
-        mock_gethostbyname.return_value = '8.8.8.8'
+    @patch('socket.getaddrinfo')
+    def test_is_safe_url_public(self, mock_getaddrinfo):
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('8.8.8.8', 0))]
         self.assertTrue(is_safe_url('http://example.com'))
         self.assertTrue(is_safe_url('https://example.com'))
 
-    @patch('socket.gethostbyname')
-    def test_is_safe_url_private(self, mock_gethostbyname):
+    @patch('socket.getaddrinfo')
+    def test_is_safe_url_private(self, mock_getaddrinfo):
         # Localhost
-        mock_gethostbyname.return_value = '127.0.0.1'
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 0))]
         self.assertFalse(is_safe_url('http://localhost'))
 
         # Private IP space
-        mock_gethostbyname.return_value = '10.0.0.1'
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('10.0.0.1', 0))]
         self.assertFalse(is_safe_url('http://10.0.0.1'))
 
-        mock_gethostbyname.return_value = '192.168.1.100'
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('192.168.1.100', 0))]
         self.assertFalse(is_safe_url('http://192.168.1.100'))
 
         # Link-local
-        mock_gethostbyname.return_value = '169.254.169.254'
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('169.254.169.254', 0))]
         self.assertFalse(is_safe_url('http://169.254.169.254'))
 
     def test_is_safe_url_invalid_schemes(self):
