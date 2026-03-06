@@ -28,8 +28,9 @@ def is_safe_url(url):
             ip_addr = result[4][0]
             ip = ipaddress.ip_address(ip_addr)
 
-            # Check if any resolved IP is private, loopback, or link-local
-            if ip.is_private or ip.is_loopback or ip.is_link_local:
+            # Check if any resolved IP is private, loopback, link-local, multicast, unspecified, or reserved
+            if (ip.is_private or ip.is_loopback or ip.is_link_local or
+                ip.is_multicast or ip.is_unspecified or ip.is_reserved):
                 return False
 
         return True
@@ -37,8 +38,11 @@ def is_safe_url(url):
         return False
 
 class WebCrawler:
-    GEOPOLITICAL_RE = re.compile('war|election|government|policy|china|usa|trade|sanction|treaty|famine|human movement|global catastrophe|catastrophe|trends')
-    ENVIRONMENTAL_RE = re.compile('climate|carbon|energy|oil|green|sustainable|disaster|emission')
+    GEOPOLITICAL_KEYWORDS = ['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty', 'famine', 'human movement', 'global catastrophe', 'catastrophe', 'trends']
+    ENVIRONMENTAL_KEYWORDS = ['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']
+
+    GEOPOLITICAL_RE = re.compile('|'.join(GEOPOLITICAL_KEYWORDS))
+    ENVIRONMENTAL_RE = re.compile('|'.join(ENVIRONMENTAL_KEYWORDS))
 
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
@@ -78,7 +82,7 @@ class WebCrawler:
             try:
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                 # Avoid SSRF redirect bypass by disabling auto redirects
-                response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
+                response = requests.get(url, headers=headers, timeout=10, allow_redirects=False, stream=True)
 
                 # Manually handle redirects securely
                 redirect_count = 0
@@ -86,22 +90,42 @@ class WebCrawler:
                     next_url = response.headers.get('Location')
                     next_url = urljoin(url, next_url)
 
+                    response.close() # Close previous response
                     if not is_safe_url(next_url):
                         print(f"Skipping unsafe redirect URL: {next_url}")
                         break
 
-                    response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False)
+                    response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
                     redirect_count += 1
 
                 if response.is_redirect:
+                    response.close()
                     continue
 
-                response.raise_for_status()
+                with response:
+                    response.raise_for_status()
+
+                    content_chunks = []
+                    downloaded_size = 0
+                    max_size = 10 * 1024 * 1024  # 10 MB
+
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            downloaded_size += len(chunk)
+                            if downloaded_size > max_size:
+                                print(f"Skipping {url}: Response exceeded 10MB limit.")
+                                content_chunks = None
+                                break
+                            content_chunks.append(chunk)
+
+                if content_chunks is None:
+                    self.visited.add(url)
+                    continue
 
                 self.visited.add(url)
                 self.page_count += 1
 
-                soup = BeautifulSoup(response.content, 'html.parser')
+                soup = BeautifulSoup(b"".join(content_chunks), 'html.parser')
                 self.extract_data(soup, url)
 
                 if depth < self.max_depth:
