@@ -8,6 +8,10 @@ import re
 from .analyzer import SentimentAnalyzer
 
 def is_safe_url(url):
+    """
+    Checks if a URL is safe to crawl by resolving its hostname and checking
+    if any of the resolved IP addresses are private, loopback, or link-local.
+    """
     try:
         parsed = urlparse(url)
         if parsed.scheme not in ('http', 'https'):
@@ -18,10 +22,7 @@ def is_safe_url(url):
             return False
 
         # Resolve hostname (supports IPv4 and IPv6)
-        try:
-            addrinfo = socket.getaddrinfo(hostname, None)
-        except socket.gaierror:
-            return False
+        addrinfo = socket.getaddrinfo(hostname, None)
 
         for result in addrinfo:
             ip_addr = result[4][0]
@@ -32,7 +33,7 @@ def is_safe_url(url):
                 return False
 
         return True
-    except Exception:
+    except (ValueError, socket.error):
         return False
 
 class WebCrawler:
