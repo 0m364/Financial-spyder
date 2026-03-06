@@ -73,5 +73,13 @@ class TestExtractData(unittest.TestCase):
         self.crawler.extract_data(mock_soup, "http://test.com")
         self.assertEqual(self.crawler.corporate_profile, "Original Profile")
 
+    def test_corporate_profile_missing(self):
+        mock_soup = MagicMock()
+        # Mock find to return None for all candidates
+        mock_soup.find.return_value = None
+
+        self.crawler.extract_data(mock_soup, "http://test.com")
+        self.assertEqual(self.crawler.corporate_profile, "")
+
 if __name__ == '__main__':
     unittest.main()
