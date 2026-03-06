@@ -16,6 +16,7 @@ class Reporter:
             print("No data to save to CSV.")
             return
 
+        filename = os.path.basename(filename)
         sanitized_data = []
         for row in self.data:
             sanitized_row = {k: self._sanitize_for_csv(v) for k, v in row.items()}
@@ -33,6 +34,7 @@ class Reporter:
         return value
 
     def generate_pdf(self, filename, tier='Free'):
+        filename = os.path.basename(filename)
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -140,6 +142,7 @@ class Reporter:
 
     def generate_ai_prompt(self, filename, start_url):
         print("Generating AI Analyst Briefing...")
+        filename = os.path.basename(filename)
 
         prompt = f"""
 ACT AS A SENIOR FINANCIAL ANALYST FOR A MAJOR HEDGE FUND.
