@@ -69,6 +69,7 @@ class PremiumSpyder(FinancialSpyder):
 
     def perform_advanced_analysis(self):
         print("Performing Premium Analysis...")
+        self.crawler.crawl_current_events()
         self.analyzer.calculate_premium_indicators()
 
         # Proprietary Prediction Score
@@ -117,6 +118,65 @@ class PremiumSpyder(FinancialSpyder):
             # Adjust prediction slightly based on environmental sentiment
             if env_sentiment < -0.1: score -= 5
             elif env_sentiment > 0.1: score += 5
+
+        # --- EXPERIMENTAL CASINO PREDICTION MODELS ---
+
+        # 1. Martingale Proxy: If we lost yesterday, double down (increase score).
+        # We need historical daily changes.
+        df = self.analyzer.data
+        if df is not None and not df.empty and len(df) >= 2:
+            latest_close = df.iloc[-1]['Close']
+            prev_close = df.iloc[-2]['Close']
+            if latest_close < prev_close:
+                score += 10 # Double down on the dip!
+                self.analyzer.technicals['Martingale_Active'] = True
+            else:
+                self.analyzer.technicals['Martingale_Active'] = False
+
+        # 2. Gambler's Fallacy (Monte Carlo Fallacy):
+        # "It's gone down 3 days in a row, it HAS to go up now!"
+        if df is not None and not df.empty and len(df) >= 4:
+            c1 = df.iloc[-1]['Close'] < df.iloc[-2]['Close']
+            c2 = df.iloc[-2]['Close'] < df.iloc[-3]['Close']
+            c3 = df.iloc[-3]['Close'] < df.iloc[-4]['Close']
+            if c1 and c2 and c3:
+                score += 20 # Overdue for a win!
+                self.analyzer.technicals['Gamblers_Fallacy_Triggered'] = True
+            else:
+                self.analyzer.technicals['Gamblers_Fallacy_Triggered'] = False
+
+        # 3. Fibonacci Sequence Scaling (Proxy):
+        # Scale based on consecutive losing days.
+        fib_seq = [1, 1, 2, 3, 5, 8, 13]
+        if df is not None and not df.empty:
+            consecutive_losses = 0
+            for i in range(1, min(len(df), 8)):
+                if df.iloc[-i]['Close'] < df.iloc[-(i+1)]['Close']:
+                    consecutive_losses += 1
+                else:
+                    break
+            if consecutive_losses > 0 and consecutive_losses < len(fib_seq):
+                score += fib_seq[consecutive_losses] * 2 # Increase bet size
+                self.analyzer.technicals['Fibonacci_Multiplier'] = fib_seq[consecutive_losses]
+            else:
+                self.analyzer.technicals['Fibonacci_Multiplier'] = 0
+
+        # 4. Kelly Criterion Proxy:
+        # f* = p - (q / b)
+        # We'll estimate win probability (p) from the last 30 days.
+        if df is not None and len(df) >= 30:
+            last_30 = df.tail(30)
+            wins = (last_30['Close'].diff() > 0).sum()
+            p = wins / 30.0
+            q = 1.0 - p
+            # Assume b (odds) = 1 (even money payout for simplicity in this proxy)
+            kelly_f = p - q
+            # If kelly_f > 0, we have an edge. Scale score by it.
+            if kelly_f > 0:
+                score += (kelly_f * 20) # Max 20 points from Kelly
+            self.analyzer.technicals['Kelly_Criterion_f'] = kelly_f
+
+        # --- END EXPERIMENTAL MODELS ---
 
         # Store score
         self.analyzer.technicals['Prediction_Score'] = min(max(score, 0), 100)
