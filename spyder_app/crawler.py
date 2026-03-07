@@ -142,6 +142,62 @@ class WebCrawler:
             except requests.RequestException as e:
                 print(f"Error crawling {url}: {e}")
 
+    def crawl_current_events(self):
+        print("Crawling current events for macro-sentiment analysis...")
+        # Scrape a generic news site for current events
+        news_url = "https://www.reuters.com/world/" # Use Reuters World News as a proxy
+
+        if not is_safe_url(news_url):
+            print(f"Skipping unsafe news URL: {news_url}")
+            return
+
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+            response = requests.get(news_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+
+            # Manually handle redirects securely
+            redirect_count = 0
+            while response.is_redirect and redirect_count < 5:
+                next_url = response.headers.get('Location')
+                next_url = urljoin(news_url, next_url)
+
+                response.close() # Close previous response
+                if not is_safe_url(next_url):
+                    print(f"Skipping unsafe redirect URL: {next_url}")
+                    break
+
+                response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+                redirect_count += 1
+
+            if response.is_redirect:
+                response.close()
+                return
+
+            with response:
+                response.raise_for_status()
+
+                content_chunks = []
+                downloaded_size = 0
+                max_size = 10 * 1024 * 1024  # 10 MB
+
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        downloaded_size += len(chunk)
+                        if downloaded_size > max_size:
+                            print(f"Skipping {news_url}: Response exceeded 10MB limit.")
+                            content_chunks = None
+                            break
+                        content_chunks.append(chunk)
+
+            if content_chunks is None:
+                return
+
+            soup = BeautifulSoup(b"".join(content_chunks), 'html.parser')
+            self.extract_data(soup, news_url)
+
+        except requests.RequestException as e:
+            print(f"Error crawling current events {news_url}: {e}")
+
     def extract_data(self, soup, url):
         headlines = soup.find_all(['h1', 'h2', 'h3'])
         for headline in headlines:

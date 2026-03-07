@@ -69,6 +69,7 @@ class PremiumSpyder(FinancialSpyder):
 
     def perform_advanced_analysis(self):
         print("Performing Premium Analysis...")
+        self.crawler.crawl_current_events()
         self.analyzer.calculate_premium_indicators()
 
         # Proprietary Prediction Score
