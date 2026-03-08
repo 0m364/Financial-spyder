@@ -45,6 +45,18 @@ class TestSSRFCrawler(unittest.TestCase):
         mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('169.254.169.254', 0))]
         self.assertFalse(is_safe_url('http://169.254.169.254'))
 
+        # Unspecified
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('0.0.0.0', 0))]
+        self.assertFalse(is_safe_url('http://0.0.0.0'))
+
+        # Multicast
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('224.0.0.0', 0))]
+        self.assertFalse(is_safe_url('http://224.0.0.0'))
+
+        # Reserved
+        mock_getaddrinfo.return_value = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('240.0.0.1', 0))]
+        self.assertFalse(is_safe_url('http://240.0.0.1'))
+
     def test_is_safe_url_invalid_schemes(self):
         self.assertFalse(is_safe_url('file:///etc/passwd'))
         self.assertFalse(is_safe_url('ftp://example.com'))

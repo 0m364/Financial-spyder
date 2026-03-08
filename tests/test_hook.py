@@ -14,9 +14,10 @@ from spyder_app.hook import hook_bot
 from spyder_app import config
 
 class TestHookBot(unittest.TestCase):
+    @patch('builtins.open')
     @patch('os.path.exists')
     @patch('builtins.print')
-    def test_hook_bot_missing_prompt_file(self, mock_print, mock_exists):
+    def test_hook_bot_missing_prompt_file(self, mock_print, mock_exists, mock_open):
         # Configure mock to return False for os.path.exists
         mock_exists.return_value = False
 
@@ -34,6 +35,7 @@ class TestHookBot(unittest.TestCase):
         mock_print.assert_any_call("      AI BOT HOOK - AUTOMATION ASSIST   ")
         mock_print.assert_any_call("========================================")
         mock_print.assert_any_call(expected_error_msg)
+        mock_open.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()

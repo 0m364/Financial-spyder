@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, mock_open
 import sys
 import os
 
@@ -93,7 +93,8 @@ class TestSpyderApp(unittest.TestCase):
         # Mock requests.get
         with patch('spyder_app.crawler.requests.get') as mock_get:
             mock_response = MagicMock()
-            mock_response.content = b'<html><h1>Headline</h1></html>'
+            mock_response.iter_content.return_value = [b'<html><h1>Headline</h1></html>']
+            mock_response.__enter__.return_value = mock_response
             mock_response.is_redirect = False
             mock_get.return_value = mock_response
 
@@ -201,6 +202,12 @@ class TestSpyderApp(unittest.TestCase):
         self.assertEqual(reporter._sanitize_for_csv(None), None)
         self.assertEqual(reporter._sanitize_for_csv(123), 123)
         self.assertEqual(reporter._sanitize_for_csv(45.6), 45.6)
+
+    def test_reporter_generate_ai_prompt(self):
+        reporter = Reporter('TEST', [], {'Current_Price': 100}, [0.5], "Profile")
+        with patch('builtins.open', mock_open()) as mock_file:
+            reporter.generate_ai_prompt('test.txt', 'http://test.com')
+            mock_file.assert_called_with('test.txt', 'w', encoding='utf-8')
 
     def test_factor_tagging(self):
         crawler = WebCrawler(self.start_url)
