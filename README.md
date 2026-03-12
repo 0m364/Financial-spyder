@@ -8,7 +8,7 @@ A robust web crawler and financial analysis tool that extracts corporate data, p
 *   **Historical Data Analysis**: Fetches maximum historical stock data using `yfinance` to "know every move the market ever made" for a given ticker.
 *   **Technical Analysis**: Calculates key indicators like SMA (50/200), RSI, and Volatility Bands.
 *   **Sentiment Analysis**: Analyzes extracted headlines using `TextBlob` to determine market sentiment.
-*   **AI Analyst Integration**: Generates a detailed `ai_briefing.txt` prompt containing all gathered data (technicals + sentiment), optimized for LLMs (ChatGPT, Gemini, etc.) to predict future movement.
+*   **AI Analyst Integration**: Generates a detailed `ai_briefing.txt` prompt containing all gathered data (technicals + sentiment), optimized for LLMs (OpenAI Codex, Gemini, etc.) to predict future movement.
 *   **Reporting**: Exports data to CSV and generates a comprehensive PDF report with summaries, technicals, and predictions.
 *   **Automation Hook**: Includes `AI_Bot_Hook.py` to launch a browser and assist in feeding the briefing to an AI.
 
@@ -38,14 +38,14 @@ python Corporate_SPYder.py
 *   You can modify the `ticker` and `start_url` in the `if __name__ == "__main__":` block in `Corporate_SPYder.py`.
 
 ### 2. Use the AI Bot Hook
-To get a "Zero Auth" style integration with ChatGPT or other AI tools:
+To get a "Zero Auth" style integration with OpenAI Codex or other AI tools:
 
 ```bash
 python AI_Bot_Hook.py
 ```
 
 1.  This launches a browser.
-2.  Navigate to your preferred AI (e.g., ChatGPT).
+2.  Navigate to your preferred AI (e.g., OpenAI Codex).
 3.  **Paste** the content (the script will guide you).
 4.  The AI will act as a Senior Financial Analyst and provide a prediction based on the comprehensive data provided.
 
