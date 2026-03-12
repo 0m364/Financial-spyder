@@ -5,7 +5,8 @@ import time
 import socket
 import ipaddress
 import re
-from .analyzer import SentimentAnalyzer
+from .analyzer import TextBlobSentimentAnalyzer
+
 
 def is_safe_url(url):
     """
@@ -14,7 +15,7 @@ def is_safe_url(url):
     """
     try:
         parsed = urlparse(url)
-        if parsed.scheme not in ('http', 'https'):
+        if parsed.scheme not in ("http", "https"):
             return False
 
         hostname = parsed.hostname
@@ -29,20 +30,51 @@ def is_safe_url(url):
             ip = ipaddress.ip_address(ip_addr)
 
             # Check if any resolved IP is private, loopback, link-local, multicast, unspecified, or reserved
-            if (ip.is_private or ip.is_loopback or ip.is_link_local or
-                ip.is_multicast or ip.is_unspecified or ip.is_reserved):
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_unspecified
+                or ip.is_reserved
+            ):
                 return False
 
         return True
     except (ValueError, socket.error):
         return False
 
-class WebCrawler:
-    GEOPOLITICAL_KEYWORDS = ['war', 'election', 'government', 'policy', 'china', 'usa', 'trade', 'sanction', 'treaty', 'famine', 'human movement', 'global catastrophe', 'catastrophe', 'trends']
-    ENVIRONMENTAL_KEYWORDS = ['climate', 'carbon', 'energy', 'oil', 'green', 'sustainable', 'disaster', 'emission']
 
-    GEOPOLITICAL_RE = re.compile('|'.join(GEOPOLITICAL_KEYWORDS))
-    ENVIRONMENTAL_RE = re.compile('|'.join(ENVIRONMENTAL_KEYWORDS))
+class WebCrawler:
+    GEOPOLITICAL_KEYWORDS = [
+        "war",
+        "election",
+        "government",
+        "policy",
+        "china",
+        "usa",
+        "trade",
+        "sanction",
+        "treaty",
+        "famine",
+        "human movement",
+        "global catastrophe",
+        "catastrophe",
+        "trends",
+    ]
+    ENVIRONMENTAL_KEYWORDS = [
+        "climate",
+        "carbon",
+        "energy",
+        "oil",
+        "green",
+        "sustainable",
+        "disaster",
+        "emission",
+    ]
+
+    GEOPOLITICAL_RE = re.compile("|".join(GEOPOLITICAL_KEYWORDS))
+    ENVIRONMENTAL_RE = re.compile("|".join(ENVIRONMENTAL_KEYWORDS))
 
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
@@ -54,12 +86,12 @@ class WebCrawler:
         self.data = []
         self.corporate_profile = ""
         self.sentiment_scores = []
-        self.sentiment_analyzer = SentimentAnalyzer()
+        self.sentiment_analyzer = TextBlobSentimentAnalyzer()
         self.factors = {
-            'Geopolitical': 0,
-            'Environmental': 0,
-            'Count_Geo': 0,
-            'Count_Env': 0
+            "Geopolitical": 0,
+            "Environmental": 0,
+            "Count_Geo": 0,
+            "Count_Env": 0,
         }
 
     def crawl(self):
@@ -80,22 +112,32 @@ class WebCrawler:
 
             print(f"Crawling: {url} (Depth: {depth})")
             try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                }
                 # Avoid SSRF redirect bypass by disabling auto redirects
-                response = requests.get(url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+                response = requests.get(
+                    url, headers=headers, timeout=10, allow_redirects=False, stream=True
+                )
 
                 # Manually handle redirects securely
                 redirect_count = 0
                 while response.is_redirect and redirect_count < 5:
-                    next_url = response.headers.get('Location')
+                    next_url = response.headers.get("Location")
                     next_url = urljoin(url, next_url)
 
-                    response.close() # Close previous response
+                    response.close()  # Close previous response
                     if not is_safe_url(next_url):
                         print(f"Skipping unsafe redirect URL: {next_url}")
                         break
 
-                    response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+                    response = requests.get(
+                        next_url,
+                        headers=headers,
+                        timeout=10,
+                        allow_redirects=False,
+                        stream=True,
+                    )
                     redirect_count += 1
 
                 if response.is_redirect:
@@ -125,15 +167,18 @@ class WebCrawler:
                 self.visited.add(url)
                 self.page_count += 1
 
-                soup = BeautifulSoup(b"".join(content_chunks), 'html.parser')
+                soup = BeautifulSoup(b"".join(content_chunks), "html.parser")
                 self.extract_data(soup, url)
 
                 if depth < self.max_depth:
-                    for link in soup.find_all('a', href=True):
-                        next_url = urljoin(url, link['href'])
+                    for link in soup.find_all("a", href=True):
+                        next_url = urljoin(url, link["href"])
                         parsed_next = urlparse(next_url)
 
-                        if parsed_next.scheme in ['http', 'https'] and parsed_next.netloc == self.start_url_parsed.netloc:
+                        if (
+                            parsed_next.scheme in ["http", "https"]
+                            and parsed_next.netloc == self.start_url_parsed.netloc
+                        ):
                             if next_url not in self.visited:
                                 queue.append((next_url, depth + 1))
 
@@ -145,28 +190,42 @@ class WebCrawler:
     def crawl_current_events(self):
         print("Crawling current events for macro-sentiment analysis...")
         # Scrape a generic news site for current events
-        news_url = "https://www.reuters.com/world/" # Use Reuters World News as a proxy
+        news_url = "https://www.reuters.com/world/"  # Use Reuters World News as a proxy
 
         if not is_safe_url(news_url):
             print(f"Skipping unsafe news URL: {news_url}")
             return
 
         try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-            response = requests.get(news_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            response = requests.get(
+                news_url,
+                headers=headers,
+                timeout=10,
+                allow_redirects=False,
+                stream=True,
+            )
 
             # Manually handle redirects securely
             redirect_count = 0
             while response.is_redirect and redirect_count < 5:
-                next_url = response.headers.get('Location')
+                next_url = response.headers.get("Location")
                 next_url = urljoin(news_url, next_url)
 
-                response.close() # Close previous response
+                response.close()  # Close previous response
                 if not is_safe_url(next_url):
                     print(f"Skipping unsafe redirect URL: {next_url}")
                     break
 
-                response = requests.get(next_url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+                response = requests.get(
+                    next_url,
+                    headers=headers,
+                    timeout=10,
+                    allow_redirects=False,
+                    stream=True,
+                )
                 redirect_count += 1
 
             if response.is_redirect:
@@ -192,14 +251,14 @@ class WebCrawler:
             if content_chunks is None:
                 return
 
-            soup = BeautifulSoup(b"".join(content_chunks), 'html.parser')
+            soup = BeautifulSoup(b"".join(content_chunks), "html.parser")
             self.extract_data(soup, news_url)
 
         except requests.RequestException as e:
             print(f"Error crawling current events {news_url}: {e}")
 
     def extract_data(self, soup, url):
-        headlines = soup.find_all(['h1', 'h2', 'h3'])
+        headlines = soup.find_all(["h1", "h2", "h3"])
         for headline in headlines:
             text = headline.get_text(strip=True)
             if text:
@@ -210,28 +269,25 @@ class WebCrawler:
                 text_lower = text.lower()
                 tags = []
                 if self.GEOPOLITICAL_RE.search(text_lower):
-                    tags.append('Geopolitical')
-                    self.factors['Geopolitical'] += sentiment
-                    self.factors['Count_Geo'] += 1
+                    tags.append("Geopolitical")
+                    self.factors["Geopolitical"] += sentiment
+                    self.factors["Count_Geo"] += 1
 
                 if self.ENVIRONMENTAL_RE.search(text_lower):
-                    tags.append('Environmental')
-                    self.factors['Environmental'] += sentiment
-                    self.factors['Count_Env'] += 1
+                    tags.append("Environmental")
+                    self.factors["Environmental"] += sentiment
+                    self.factors["Count_Env"] += 1
 
-                self.data.append({
-                    'Headline': text,
-                    'Sentiment': sentiment,
-                    'URL': url,
-                    'Tags': tags
-                })
+                self.data.append(
+                    {"Headline": text, "Sentiment": sentiment, "URL": url, "Tags": tags}
+                )
 
         if not self.corporate_profile:
             profile_candidates = [
-                soup.find('div', {'class': 'corporate-profile'}),
-                soup.find('div', {'id': 'company-profile'}),
-                soup.find('div', class_=lambda x: x and 'profile' in x.lower()),
-                soup.find('section', class_=lambda x: x and 'about' in x.lower())
+                soup.find("div", {"class": "corporate-profile"}),
+                soup.find("div", {"id": "company-profile"}),
+                soup.find("div", class_=lambda x: x and "profile" in x.lower()),
+                soup.find("section", class_=lambda x: x and "about" in x.lower()),
             ]
             for candidate in profile_candidates:
                 if candidate:

@@ -20,11 +20,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spyder_app.analyzer import TechnicalAnalyzer
 
+
 class TestTechnicalAnalyzer(unittest.TestCase):
     def setUp(self):
-        self.analyzer = TechnicalAnalyzer('TEST')
+        self.analyzer = TechnicalAnalyzer("TEST")
 
-    @patch('spyder_app.analyzer.yf.Ticker')
+    @patch("spyder_app.analyzer.yf.Ticker")
     def test_fetch_history_empty_data(self, mock_ticker_class):
         # Create a mock for the ticker object returned by yf.Ticker
         mock_ticker_obj = MagicMock()
@@ -44,8 +45,48 @@ class TestTechnicalAnalyzer(unittest.TestCase):
 
         # Verify the result and that it checks the empty condition properly
         self.assertFalse(result)
-        mock_ticker_class.assert_called_with('TEST')
+        mock_ticker_class.assert_called_with("TEST")
         mock_ticker_obj.history.assert_called_with(period="1y")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
+
+    @patch('spyder_app.analyzer.yf.Ticker')
+    def test_calculate_indicators(self, mock_ticker_class):
+        # Setup mock pandas DataFrame with 50 rows of dummy data to satisfy SMA_50
+        mock_df = MagicMock()
+
+        import datetime
+
+        # We need realistic DataFrame structure to pass ta functions
+        import pandas as pd
+        import numpy as np
+
+        # Create a simple DataFrame for testing
+        dates = pd.date_range(start='1/1/2020', periods=200)
+        df = pd.DataFrame(index=dates)
+        df['Close'] = [100.0] * 200
+        df['High'] = [105.0] * 200
+        df['Low'] = [95.0] * 200
+
+        self.analyzer.data = df
+
+        # Ensure 'ta' module doesn't error when calculating
+        with patch('spyder_app.analyzer.ta') as mock_ta:
+            # Mock ta functions
+            mock_ta.trend.sma_indicator.return_value = pd.Series([100.0] * 200, index=dates)
+            mock_ta.momentum.rsi.return_value = pd.Series([50.0] * 200, index=dates)
+
+            mock_bb = MagicMock()
+            mock_bb.bollinger_hband.return_value = pd.Series([105.0] * 200, index=dates)
+            mock_bb.bollinger_lband.return_value = pd.Series([95.0] * 200, index=dates)
+            mock_ta.volatility.BollingerBands.return_value = mock_bb
+
+            self.analyzer.calculate_indicators()
+
+            # Verify technicals are populated
+            self.assertEqual(self.analyzer.technicals['Current_Price'], 100.0)
+            self.assertEqual(self.analyzer.technicals['SMA_50'], 100.0)
+            self.assertEqual(self.analyzer.technicals['RSI'], 50.0)
+            self.assertEqual(self.analyzer.technicals['Volatility_Band_Width'], 10.0)

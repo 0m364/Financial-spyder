@@ -1,10 +1,10 @@
 # Configuration for Financial Spyder
 
 # Default settings
-DEFAULT_START_URL = 'https://finance.yahoo.com'
-DEFAULT_TICKER = 'SPY'
-DEFAULT_CSV_FILE = 'financial_data.csv'
-DEFAULT_PDF_FILE = 'market_report.pdf'
+DEFAULT_START_URL = "https://finance.yahoo.com"
+DEFAULT_TICKER = "SPY"
+DEFAULT_CSV_FILE = "financial_data.csv"
+DEFAULT_PDF_FILE = "market_report.pdf"
 
 # Tier limits
 FREE_MAX_DEPTH = 2
@@ -27,4 +27,4 @@ STOCH_WINDOW = 14
 STOCH_SMOOTH = 3
 
 # AI Prompt
-AI_PROMPT_FILE = 'ai_briefing.txt'
+AI_PROMPT_FILE = "ai_briefing.txt"

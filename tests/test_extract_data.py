@@ -1,5 +1,5 @@
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import os
 
 # Mock dependencies
@@ -18,9 +18,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from spyder_app.crawler import WebCrawler
 
+
 class TestExtractData(unittest.TestCase):
     def setUp(self):
-        self.crawler = WebCrawler(start_url='http://test.com')
+        self.crawler = WebCrawler(start_url="http://test.com")
         # Mock sentiment analyzer
         self.crawler.sentiment_analyzer = MagicMock()
         self.crawler.sentiment_analyzer.analyze.return_value = 0.5
@@ -45,9 +46,9 @@ class TestExtractData(unittest.TestCase):
 
         self.crawler.extract_data(mock_soup, "http://test.com")
 
-        mock_soup.find_all.assert_called_with(['h1', 'h2', 'h3'])
+        mock_soup.find_all.assert_called_with(["h1", "h2", "h3"])
         self.assertEqual(len(self.crawler.data), 3)
-        self.assertEqual(self.crawler.data[0]['Headline'], "Headline 1")
+        self.assertEqual(self.crawler.data[0]["Headline"], "Headline 1")
 
     def test_corporate_profile_selection(self):
         mock_soup = MagicMock()
@@ -81,5 +82,6 @@ class TestExtractData(unittest.TestCase):
         self.crawler.extract_data(mock_soup, "http://test.com")
         self.assertEqual(self.crawler.corporate_profile, "")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

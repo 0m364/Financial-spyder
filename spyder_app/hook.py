@@ -2,9 +2,10 @@ from playwright.sync_api import sync_playwright
 import os
 from . import config
 
+
 def hook_bot():
     print("========================================")
-    print("      AI BOT HOOK - AUTOMATION ASSIST   ")
+    print("      BROWSER HELPER - AUTOMATION ASSIST   ")
     print("========================================")
 
     if not os.path.exists(config.AI_PROMPT_FILE):
@@ -12,7 +13,7 @@ def hook_bot():
         return
 
     with open(config.AI_PROMPT_FILE, "r", encoding="utf-8") as f:
-        prompt_content = f.read()
+        f.read()
 
     print("\nInstructions:")
     print("1. This script will launch a Chromium browser.")
@@ -31,8 +32,12 @@ def hook_bot():
             page.goto("https://platform.openai.com")
 
             print("\nBrowser launched!")
-            print(f"Action Required: Copy the content of '{config.AI_PROMPT_FILE}' and paste it into the AI chat.")
-            print("Tip: Use Ctrl+A, Ctrl+C in the text file, then Ctrl+V in the browser.")
+            print(
+                f"Action Required: Copy the content of '{config.AI_PROMPT_FILE}' and paste it into the AI chat."
+            )
+            print(
+                "Tip: Use Ctrl+A, Ctrl+C in the text file, then Ctrl+V in the browser."
+            )
 
             # Keep the script running until user decides to close
             input("\nPress Enter here to close the browser and exit script...")
@@ -42,6 +47,7 @@ def hook_bot():
     except Exception as e:
         print(f"An error occurred: {e}")
         print("Ensure Playwright browsers are installed: 'playwright install'")
+
 
 if __name__ == "__main__":
     hook_bot()
