@@ -17,7 +17,7 @@ def hook_bot():
 
     print("\nInstructions:")
     print("1. This script will launch a Chromium browser.")
-    print("2. Navigate to your preferred AI tool (OpenAI Codex, Gemini, etc.).")
+    print("2. Navigate to your preferred AI tool (ChatGPT, Gemini, etc.).")
     print("3. Log in manually if required.")
     print("4. The prompt content has been prepared for you.")
     print("5. PASTE the content into the chat box.")
@@ -29,7 +29,7 @@ def hook_bot():
             page = browser.new_page()
 
             # Open a neutral starting page or a common AI tool landing page
-            page.goto("https://platform.openai.com")
+            page.goto("https://chat.openai.com")
 
             print("\nBrowser launched!")
             print(

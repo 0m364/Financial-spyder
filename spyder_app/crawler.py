@@ -73,8 +73,8 @@ class WebCrawler:
         "emission",
     ]
 
-    GEOPOLITICAL_RE = re.compile("|".join(GEOPOLITICAL_KEYWORDS))
-    ENVIRONMENTAL_RE = re.compile("|".join(ENVIRONMENTAL_KEYWORDS))
+    GEOPOLITICAL_RE = re.compile(r"\b(" + "|".join(re.escape(kw) for kw in GEOPOLITICAL_KEYWORDS) + r")\b", flags=re.IGNORECASE)
+    ENVIRONMENTAL_RE = re.compile(r"\b(" + "|".join(re.escape(kw) for kw in ENVIRONMENTAL_KEYWORDS) + r")\b", flags=re.IGNORECASE)
 
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
@@ -146,6 +146,11 @@ class WebCrawler:
 
                 with response:
                     response.raise_for_status()
+
+                    content_type = response.headers.get("Content-Type", "")
+                    if "text/html" not in content_type:
+                        print(f"Skipping {url}: Unsupported Content-Type {content_type}")
+                        continue
 
                     content_chunks = []
                     downloaded_size = 0
@@ -234,6 +239,11 @@ class WebCrawler:
 
             with response:
                 response.raise_for_status()
+
+                content_type = response.headers.get("Content-Type", "")
+                if "text/html" not in content_type:
+                    print(f"Skipping {news_url}: Unsupported Content-Type {content_type}")
+                    return
 
                 content_chunks = []
                 downloaded_size = 0

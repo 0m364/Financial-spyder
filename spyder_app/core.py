@@ -32,8 +32,12 @@ class FinancialSpyder:
         self.analyzer = TechnicalAnalyzer(self.ticker)
 
         # Step 1: Historical Data
-        self.analyzer.fetch_history(period=self.get_history_period())
-        self.analyzer.calculate_indicators()
+        history_success = self.analyzer.fetch_history(period=self.get_history_period())
+        if history_success and self.analyzer.data is not None and len(self.analyzer.data) >= 2:
+            self.analyzer.calculate_indicators()
+        else:
+            print("Warning: Historical data fetch failed or returned insufficient data (< 2 rows). Technical analysis will be skipped.")
+            self.analyzer.technicals['Incomplete_Report'] = True
 
         # Step 2: Crawl
         self.crawler.crawl()
@@ -88,6 +92,11 @@ class PremiumSpyder(FinancialSpyder):
     def perform_advanced_analysis(self):
         print("Performing Premium Analysis...")
         self.crawler.crawl_current_events()
+
+        if self.analyzer.technicals.get('Incomplete_Report', False):
+            print("Skipping premium indicators due to missing historical data.")
+            return
+
         self.analyzer.calculate_premium_indicators()
 
         # Proprietary Prediction Score

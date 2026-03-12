@@ -9,8 +9,6 @@ A robust web crawler and financial analysis tool that extracts corporate data, p
 *   **Technical Analysis**: Calculates key indicators like SMA (50/200), RSI, and Volatility Bands.
 *   **Sentiment Analysis**: Analyzes extracted headlines to determine market sentiment.
 *   **AI Analyst Integration**: Generates a detailed `ai_briefing.txt` prompt containing all gathered data (technicals + sentiment), optimized for LLMs (ChatGPT, Gemini, etc.) to predict future movement.
-*   **Sentiment Analysis**: Analyzes extracted headlines using `TextBlob` to determine market sentiment.
-*   **AI Analyst Integration**: Generates a detailed `ai_briefing.txt` prompt containing all gathered data (technicals + sentiment), optimized for LLMs (OpenAI Codex, Gemini, etc.) to predict future movement.
 *   **Reporting**: Exports data to CSV and generates a comprehensive PDF report with summaries, technicals, and predictions.
 *   **Browser Helper**: Includes `AI_Bot_Hook.py` / `hook.py` to launch a browser and assist in manually pasting the briefing to an AI tool.
 
@@ -51,8 +49,6 @@ Options:
 
 ### 2. Use the Browser Helper
 To get a browser-assisted automation hook with ChatGPT or other AI tools:
-### 2. Use the AI Bot Hook
-To get a "Zero Auth" style integration with OpenAI Codex or other AI tools:
 
 ```bash
 python AI_Bot_Hook.py
@@ -60,7 +56,7 @@ python AI_Bot_Hook.py
 Or use the `--hook` flag with the main application.
 
 1.  This launches a browser.
-2.  Navigate to your preferred AI (e.g., OpenAI Codex).
+2.  Navigate to your preferred AI (e.g., ChatGPT).
 3.  **Paste** the content (the script will guide you).
 4.  The AI will act as a Senior Financial Analyst and provide a prediction based on the comprehensive data provided.
 

@@ -91,8 +91,7 @@ class TestSSRFCrawler(unittest.TestCase):
         mock_requests_get.assert_not_called()
 
 
-if __name__ == "__main__":
-    unittest.main()
+
 
     @patch("spyder_app.crawler.is_safe_url")
     @patch("spyder_app.crawler.requests.get")
@@ -104,6 +103,7 @@ if __name__ == "__main__":
         mock_response.is_redirect = False
         # 2 chunks of 6MB each = 12MB total
         mock_response.iter_content.return_value = [b"a" * (6 * 1024 * 1024), b"b" * (6 * 1024 * 1024)]
+        mock_response.headers = {'Content-Type': 'text/html'}
         mock_response.__enter__.return_value = mock_response
         mock_requests_get.return_value = mock_response
 
@@ -134,3 +134,6 @@ if __name__ == "__main__":
         self.assertEqual(mock_requests_get.call_count, 6)
         # Verify page wasn't processed due to reaching redirect limit
         self.assertEqual(len(crawler.data), 0)
+
+if __name__ == "__main__":
+    unittest.main()
