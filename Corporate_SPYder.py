@@ -7,6 +7,6 @@ if __name__ == "__main__":
         start_url=config.DEFAULT_START_URL,
         ticker=config.DEFAULT_TICKER,
         csv_file=config.DEFAULT_CSV_FILE,
-        pdf_file=config.DEFAULT_PDF_FILE
+        pdf_file=config.DEFAULT_PDF_FILE,
     )
     spider.run()
