@@ -213,8 +213,10 @@ Analyze the provided data for ticker symbol {self.ticker} and provide a detailed
         sorted_data = sorted(
             self.data, key=lambda x: abs(x["Sentiment"]), reverse=True
         )[:10]
-        for item in sorted_data:
-            prompt += f"- <headline>{item['Headline']}</headline> (Sentiment: {item['Sentiment']:.2f})\n"
+        prompt += "".join(
+            f"- {item['Headline']} (Sentiment: {item['Sentiment']:.2f})\n"
+            for item in sorted_data
+        )
 
         with open(filename, "w", encoding="utf-8") as f:
             f.write(prompt)
