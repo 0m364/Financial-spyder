@@ -73,8 +73,8 @@ class WebCrawler:
         "emission",
     ]
 
-    GEOPOLITICAL_RE = re.compile("|".join(GEOPOLITICAL_KEYWORDS))
-    ENVIRONMENTAL_RE = re.compile("|".join(ENVIRONMENTAL_KEYWORDS))
+    GEOPOLITICAL_RE = re.compile(r"\b(" + "|".join(re.escape(kw) for kw in GEOPOLITICAL_KEYWORDS) + r")\b", flags=re.IGNORECASE)
+    ENVIRONMENTAL_RE = re.compile(r"\b(" + "|".join(re.escape(kw) for kw in ENVIRONMENTAL_KEYWORDS) + r")\b", flags=re.IGNORECASE)
 
     def __init__(self, start_url, max_depth=2, max_pages=10):
         self.start_url = start_url
@@ -178,6 +178,28 @@ class WebCrawler:
                     self.visited.add(url)
                     continue
 
+                with response:
+                    response.raise_for_status()
+
+                    content_type = response.headers.get("Content-Type", "")
+                    if "text/html" not in content_type:
+                        print(f"Skipping {url}: Unsupported Content-Type {content_type}")
+                        continue
+
+                    content_chunks = []
+                    downloaded_size = 0
+                    max_size = 10 * 1024 * 1024  # 10 MB
+
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            downloaded_size += len(chunk)
+                            if downloaded_size > max_size:
+                                print(f"Skipping {url}: Response exceeded 10MB limit.")
+                                content_chunks = None
+                                break
+                            content_chunks.append(chunk)
+
+                if content_chunks is None:
                 content = self._download_content(response, url)
                 if content is None:
                     self.visited.add(url)
@@ -220,6 +242,28 @@ class WebCrawler:
             if not response:
                 return
 
+            with response:
+                response.raise_for_status()
+
+                content_type = response.headers.get("Content-Type", "")
+                if "text/html" not in content_type:
+                    print(f"Skipping {news_url}: Unsupported Content-Type {content_type}")
+                    return
+
+                content_chunks = []
+                downloaded_size = 0
+                max_size = 10 * 1024 * 1024  # 10 MB
+
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        downloaded_size += len(chunk)
+                        if downloaded_size > max_size:
+                            print(f"Skipping {news_url}: Response exceeded 10MB limit.")
+                            content_chunks = None
+                            break
+                        content_chunks.append(chunk)
+
+            if content_chunks is None:
             content = self._download_content(response, news_url)
             if content is None:
                 return

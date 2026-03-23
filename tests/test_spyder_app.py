@@ -99,6 +99,7 @@ class TestSpyderApp(unittest.TestCase):
             mock_response.iter_content.return_value = [
                 b"<html><h1>Headline</h1></html>"
             ]
+            mock_response.headers = {'Content-Type': 'text/html'}
             mock_response.__enter__.return_value = mock_response
             mock_response.is_redirect = False
             mock_get.return_value = mock_response
