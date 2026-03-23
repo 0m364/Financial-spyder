@@ -5,6 +5,7 @@ import os
 # Mock dependencies
 sys.modules["requests"] = MagicMock()
 sys.modules["pandas"] = MagicMock()
+sys.modules["numpy"] = MagicMock()
 sys.modules["fpdf"] = MagicMock()
 sys.modules["textblob"] = MagicMock()
 sys.modules["yfinance"] = MagicMock()
@@ -31,7 +32,6 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_ticker_obj = MagicMock()
 
         # Configure the mock to return an empty DataFrame-like object for history()
-        # Since pandas is mocked, we need an object that has an 'empty' attribute set to True
         mock_empty_df = MagicMock()
         mock_empty_df.empty = True
 
@@ -48,45 +48,99 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_ticker_class.assert_called_with("TEST")
         mock_ticker_obj.history.assert_called_with(period="1y")
 
-
-if __name__ == "__main__":
-    unittest.main()
-
-    @patch('spyder_app.analyzer.yf.Ticker')
-    def test_calculate_indicators(self, mock_ticker_class):
-        # Setup mock pandas DataFrame with 50 rows of dummy data to satisfy SMA_50
+    def test_calculate_indicators(self):
+        # Setup mock DataFrame
         mock_df = MagicMock()
+        mock_df.empty = False
 
-        import datetime
+        # Mock rows for iloc
+        mock_latest = MagicMock()
+        # Mocking __getitem__ for the row object
+        mock_latest.__getitem__.side_effect = lambda key: {
+            "Close": 100.0,
+            "SMA_50": 100.0,
+            "SMA_200": 100.0,
+            "RSI": 50.0,
+            "BB_High": 105.0,
+            "BB_Low": 95.0
+        }[key]
+        mock_latest.name.strftime.return_value = "2020-01-01"
 
-        # We need realistic DataFrame structure to pass ta functions
-        import pandas as pd
-        import numpy as np
+        mock_prev = MagicMock()
+        mock_prev.__getitem__.side_effect = lambda key: 90.0 if key == "Close" else None
 
-        # Create a simple DataFrame for testing
-        dates = pd.date_range(start='1/1/2020', periods=200)
-        df = pd.DataFrame(index=dates)
-        df['Close'] = [100.0] * 200
-        df['High'] = [105.0] * 200
-        df['Low'] = [95.0] * 200
+        # Use side_effect for iloc
+        mock_df.iloc.__getitem__.side_effect = lambda idx: mock_latest if idx == -1 else mock_prev
 
-        self.analyzer.data = df
+        self.analyzer.data = mock_df
 
-        # Ensure 'ta' module doesn't error when calculating
         with patch('spyder_app.analyzer.ta') as mock_ta:
             # Mock ta functions
-            mock_ta.trend.sma_indicator.return_value = pd.Series([100.0] * 200, index=dates)
-            mock_ta.momentum.rsi.return_value = pd.Series([50.0] * 200, index=dates)
+            mock_ta.trend.sma_indicator.return_value = "SMA_50_SERIES"
+            mock_ta.momentum.rsi.return_value = "RSI_SERIES"
 
             mock_bb = MagicMock()
-            mock_bb.bollinger_hband.return_value = pd.Series([105.0] * 200, index=dates)
-            mock_bb.bollinger_lband.return_value = pd.Series([95.0] * 200, index=dates)
+            mock_bb.bollinger_hband.return_value = "BB_HIGH_SERIES"
+            mock_bb.bollinger_lband.return_value = "BB_LOW_SERIES"
             mock_ta.volatility.BollingerBands.return_value = mock_bb
 
             self.analyzer.calculate_indicators()
 
-            # Verify technicals are populated
+            # Verify technicals are populated correctly
             self.assertEqual(self.analyzer.technicals['Current_Price'], 100.0)
             self.assertEqual(self.analyzer.technicals['SMA_50'], 100.0)
             self.assertEqual(self.analyzer.technicals['RSI'], 50.0)
             self.assertEqual(self.analyzer.technicals['Volatility_Band_Width'], 10.0)
+            self.assertEqual(self.analyzer.technicals['Latest_Date'], "2020-01-01")
+
+    def test_calculate_premium_indicators(self):
+        # Setup mock DataFrame
+        mock_df = MagicMock()
+        mock_df.empty = False
+
+        mock_latest = MagicMock()
+        mock_latest.__getitem__.side_effect = lambda key: {
+            "MACD": 1.5,
+            "MACD_Signal": 1.0,
+            "Stoch_K": 80.0,
+            "Stoch_D": 75.0,
+            "ATR": 2.0
+        }[key]
+
+        mock_df.iloc.__getitem__.return_value = mock_latest
+        self.analyzer.data = mock_df
+
+        # Pre-populate technicals to check update behavior
+        self.analyzer.technicals = {"Existing": "Data"}
+
+        with patch('spyder_app.analyzer.ta') as mock_ta:
+            self.analyzer.calculate_premium_indicators()
+
+            # Verify ta functions were called
+            mock_ta.trend.macd.assert_called()
+            mock_ta.trend.macd_signal.assert_called()
+            mock_ta.momentum.stoch.assert_called()
+            mock_ta.momentum.stoch_signal.assert_called()
+            mock_ta.volatility.average_true_range.assert_called()
+
+            # Verify technicals were updated
+            self.assertEqual(self.analyzer.technicals["MACD"], 1.5)
+            self.assertEqual(self.analyzer.technicals["ATR"], 2.0)
+            self.assertEqual(self.analyzer.technicals["Existing"], "Data")
+
+    def test_calculate_premium_indicators_no_data(self):
+        # Test with None
+        self.analyzer.data = None
+        self.analyzer.calculate_premium_indicators()
+        self.assertEqual(self.analyzer.technicals, {})
+
+        # Test with empty DataFrame
+        mock_df = MagicMock()
+        mock_df.empty = True
+        self.analyzer.data = mock_df
+        self.analyzer.calculate_premium_indicators()
+        self.assertEqual(self.analyzer.technicals, {})
+
+
+if __name__ == "__main__":
+    unittest.main()
