@@ -94,6 +94,67 @@ class WebCrawler:
             "Count_Env": 0,
         }
 
+    def _fetch_url(self, url):
+        """
+        Fetches a URL securely, handling redirects and SSRF checks.
+        Returns a requests.Response object or None if failed.
+        """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        # Avoid SSRF redirect bypass by disabling auto redirects
+        response = requests.get(
+            url, headers=headers, timeout=10, allow_redirects=False, stream=True
+        )
+
+        # Manually handle redirects securely
+        redirect_count = 0
+        while response.is_redirect and redirect_count < 5:
+            next_url = response.headers.get("Location")
+            next_url = urljoin(url, next_url)
+
+            response.close()  # Close previous response
+            if not is_safe_url(next_url):
+                print(f"Skipping unsafe redirect URL: {next_url}")
+                return None
+
+            response = requests.get(
+                next_url,
+                headers=headers,
+                timeout=10,
+                allow_redirects=False,
+                stream=True,
+            )
+            redirect_count += 1
+
+        if response.is_redirect:
+            response.close()
+            return None
+
+        return response
+
+    def _download_content(self, response, url):
+        """
+        Downloads content from a response object with a size limit.
+        Returns content bytes or None if limit exceeded.
+        """
+        with response:
+            response.raise_for_status()
+
+            content_chunks = []
+            downloaded_size = 0
+            max_size = 10 * 1024 * 1024  # 10 MB
+
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    downloaded_size += len(chunk)
+                    if downloaded_size > max_size:
+                        print(f"Skipping {url}: Response exceeded 10MB limit.")
+                        return None
+                    content_chunks.append(chunk)
+
+            return b"".join(content_chunks)
+
     def crawl(self):
         queue = [(self.start_url, 0)]
 
@@ -112,36 +173,9 @@ class WebCrawler:
 
             print(f"Crawling: {url} (Depth: {depth})")
             try:
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                }
-                # Avoid SSRF redirect bypass by disabling auto redirects
-                response = requests.get(
-                    url, headers=headers, timeout=10, allow_redirects=False, stream=True
-                )
-
-                # Manually handle redirects securely
-                redirect_count = 0
-                while response.is_redirect and redirect_count < 5:
-                    next_url = response.headers.get("Location")
-                    next_url = urljoin(url, next_url)
-
-                    response.close()  # Close previous response
-                    if not is_safe_url(next_url):
-                        print(f"Skipping unsafe redirect URL: {next_url}")
-                        break
-
-                    response = requests.get(
-                        next_url,
-                        headers=headers,
-                        timeout=10,
-                        allow_redirects=False,
-                        stream=True,
-                    )
-                    redirect_count += 1
-
-                if response.is_redirect:
-                    response.close()
+                response = self._fetch_url(url)
+                if not response:
+                    self.visited.add(url)
                     continue
 
                 with response:
@@ -166,13 +200,15 @@ class WebCrawler:
                             content_chunks.append(chunk)
 
                 if content_chunks is None:
+                content = self._download_content(response, url)
+                if content is None:
                     self.visited.add(url)
                     continue
 
                 self.visited.add(url)
                 self.page_count += 1
 
-                soup = BeautifulSoup(b"".join(content_chunks), "html.parser")
+                soup = BeautifulSoup(content, "html.parser")
                 self.extract_data(soup, url)
 
                 if depth < self.max_depth:
@@ -202,39 +238,8 @@ class WebCrawler:
             return
 
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            }
-            response = requests.get(
-                news_url,
-                headers=headers,
-                timeout=10,
-                allow_redirects=False,
-                stream=True,
-            )
-
-            # Manually handle redirects securely
-            redirect_count = 0
-            while response.is_redirect and redirect_count < 5:
-                next_url = response.headers.get("Location")
-                next_url = urljoin(news_url, next_url)
-
-                response.close()  # Close previous response
-                if not is_safe_url(next_url):
-                    print(f"Skipping unsafe redirect URL: {next_url}")
-                    break
-
-                response = requests.get(
-                    next_url,
-                    headers=headers,
-                    timeout=10,
-                    allow_redirects=False,
-                    stream=True,
-                )
-                redirect_count += 1
-
-            if response.is_redirect:
-                response.close()
+            response = self._fetch_url(news_url)
+            if not response:
                 return
 
             with response:
@@ -259,9 +264,11 @@ class WebCrawler:
                         content_chunks.append(chunk)
 
             if content_chunks is None:
+            content = self._download_content(response, news_url)
+            if content is None:
                 return
 
-            soup = BeautifulSoup(b"".join(content_chunks), "html.parser")
+            soup = BeautifulSoup(content, "html.parser")
             self.extract_data(soup, news_url)
 
         except requests.RequestException as e:
