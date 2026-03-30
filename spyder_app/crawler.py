@@ -200,10 +200,12 @@ class WebCrawler:
                             content_chunks.append(chunk)
 
                 if content_chunks is None:
-                content = self._download_content(response, url)
-                if content is None:
-                    self.visited.add(url)
-                    continue
+                    content = self._download_content(response, url)
+                    if content is None:
+                        self.visited.add(url)
+                        continue
+                else:
+                    content = b"".join(content_chunks)
 
                 self.visited.add(url)
                 self.page_count += 1
@@ -213,7 +215,24 @@ class WebCrawler:
 
                 if depth < self.max_depth:
                     for link in soup.find_all("a", href=True):
-                        next_url = urljoin(url, link["href"])
+                        href = link["href"]
+                        # Fast path for relative URLs
+                        if not (
+                            href.startswith("http://")
+                            or href.startswith("https://")
+                            or href.startswith("//")
+                        ):
+                            # Exclude other schemes (mailto:, tel:, javascript:, etc.)
+                            if ":" in href and not href.startswith("/"):
+                                continue
+
+                            next_url = urljoin(url, href)
+                            if next_url not in self.visited:
+                                queue.append((next_url, depth + 1))
+                            continue
+
+                        # Absolute or protocol-relative URL
+                        next_url = urljoin(url, href)
                         parsed_next = urlparse(next_url)
 
                         if (
@@ -264,9 +283,11 @@ class WebCrawler:
                         content_chunks.append(chunk)
 
             if content_chunks is None:
-            content = self._download_content(response, news_url)
-            if content is None:
-                return
+                content = self._download_content(response, news_url)
+                if content is None:
+                    return
+            else:
+                content = b"".join(content_chunks)
 
             soup = BeautifulSoup(content, "html.parser")
             self.extract_data(soup, news_url)
