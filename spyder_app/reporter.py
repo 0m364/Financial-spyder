@@ -214,7 +214,7 @@ Analyze the provided data for ticker symbol {self.ticker} and provide a detailed
             self.data, key=lambda x: abs(x["Sentiment"]), reverse=True
         )[:10]
         prompt += "".join(
-            f"- {item['Headline']} (Sentiment: {item['Sentiment']:.2f})\n"
+            f"- <headline>{item['Headline']}</headline> (Sentiment: {item['Sentiment']:.2f})\n"
             for item in sorted_data
         )
 

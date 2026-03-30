@@ -1,6 +1,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 import os
+import unittest
 
 # Mock dependencies
 sys.modules["requests"] = MagicMock()
@@ -13,8 +14,6 @@ sys.modules["ta"] = MagicMock()
 sys.modules["bs4"] = MagicMock()
 sys.modules["playwright"] = MagicMock()
 sys.modules["playwright.sync_api"] = MagicMock()
-
-import unittest
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,44 +47,9 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_ticker_class.assert_called_with("TEST")
         mock_ticker_obj.history.assert_called_with(period="1y")
 
-
-
-
     @patch('spyder_app.analyzer.yf.Ticker')
     def test_calculate_indicators(self, mock_ticker_class):
-        # Setup mock pandas DataFrame with 50 rows of dummy data to satisfy SMA_50
-    def test_calculate_indicators(self):
         # Setup mock DataFrame
-        mock_df = MagicMock()
-        mock_df.empty = False
-
-        # Mock rows for iloc
-        mock_latest = MagicMock()
-        # Mocking __getitem__ for the row object
-        mock_latest.__getitem__.side_effect = lambda key: {
-            "Close": 100.0,
-            "SMA_50": 100.0,
-            "SMA_200": 100.0,
-            "RSI": 50.0,
-            "BB_High": 105.0,
-            "BB_Low": 95.0
-        }[key]
-        mock_latest.name.strftime.return_value = "2020-01-01"
-
-        # We need realistic DataFrame structure to pass ta functions
-
-        import pandas as pd
-        import sys
-        sys.modules['pandas'] = pd
-
-        mock_prev = MagicMock()
-        mock_prev.__getitem__.side_effect = lambda key: 90.0 if key == "Close" else None
-
-        # Use side_effect for iloc
-        mock_df.iloc.__getitem__.side_effect = lambda idx: mock_latest if idx == -1 else mock_prev
-
-
-        # We have to mock pandas correctly because it is mocked in sys.modules
         mock_df = MagicMock()
         mock_df.empty = False
 
@@ -115,20 +79,16 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_iloc.__getitem__.side_effect = lambda k: latest if k == -1 else prev
         mock_df.iloc = mock_iloc
 
-        # Override the df variable completely to use this mock instead of the actual DataFrame since pandas is a Mock
-        self.analyzer.data = mock_df
-
-
         self.analyzer.data = mock_df
 
         with patch('spyder_app.analyzer.ta') as mock_ta:
             # Mock ta functions
-            mock_ta.trend.sma_indicator.return_value = "SMA_50_SERIES"
-            mock_ta.momentum.rsi.return_value = "RSI_SERIES"
+            mock_ta.trend.sma_indicator.return_value = MagicMock()
+            mock_ta.momentum.rsi.return_value = MagicMock()
 
             mock_bb = MagicMock()
-            mock_bb.bollinger_hband.return_value = "BB_HIGH_SERIES"
-            mock_bb.bollinger_lband.return_value = "BB_LOW_SERIES"
+            mock_bb.bollinger_hband.return_value = MagicMock()
+            mock_bb.bollinger_lband.return_value = MagicMock()
             mock_ta.volatility.BollingerBands.return_value = mock_bb
 
             self.analyzer.calculate_indicators()
@@ -138,9 +98,6 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             self.assertEqual(self.analyzer.technicals['SMA_50'], 100.0)
             self.assertEqual(self.analyzer.technicals['RSI'], 50.0)
             self.assertEqual(self.analyzer.technicals['Volatility_Band_Width'], 10.0)
-
-if __name__ == "__main__":
-    unittest.main()
             self.assertEqual(self.analyzer.technicals['Latest_Date'], "2020-01-01")
 
     def test_calculate_premium_indicators(self):
