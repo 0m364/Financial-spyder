@@ -30,9 +30,12 @@ class Reporter:
         print(f"Data saved to {filename}")
 
     def _sanitize_for_csv(self, value):
+        """Mitigates CSV Injection by prepending ' to values starting with dangerous characters."""
         if isinstance(value, str) and value:
             dangerous_chars = ("=", "+", "-", "@", "\t", "\r")
-            if value[0] in dangerous_chars:
+            # Check if the string starts with a dangerous character,
+            # either absolutely or after stripping leading whitespace.
+            if value[0] in dangerous_chars or value.lstrip()[0:1] in dangerous_chars:
                 return "'" + value
         return value
 
