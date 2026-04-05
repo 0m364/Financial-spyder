@@ -47,7 +47,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_ticker_class.assert_called_with("TEST")
         mock_ticker_obj.history.assert_called_with(period="1y")
 
-    @patch('spyder_app.analyzer.yf.Ticker')
+    @patch("spyder_app.analyzer.yf.Ticker")
     def test_calculate_indicators(self, mock_ticker_class):
         # Setup mock DataFrame
         mock_df = MagicMock()
@@ -56,22 +56,22 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         # Mock iloc to return dict-like objects
         latest = MagicMock()
         latest.__getitem__.side_effect = lambda k: {
-            'Close': 100.0,
-            'High': 105.0,
-            'Low': 95.0,
-            'SMA_50': 100.0,
-            'SMA_200': 100.0,
-            'RSI': 50.0,
-            'BB_High': 105.0,
-            'BB_Low': 95.0
+            "Close": 100.0,
+            "High": 105.0,
+            "Low": 95.0,
+            "SMA_50": 100.0,
+            "SMA_200": 100.0,
+            "RSI": 50.0,
+            "BB_High": 105.0,
+            "BB_Low": 95.0,
         }[k]
-        latest.name.strftime.return_value = '2020-01-01'
+        latest.name.strftime.return_value = "2020-01-01"
 
         prev = MagicMock()
         prev.__getitem__.side_effect = lambda k: {
-            'Close': 100.0,
-            'High': 105.0,
-            'Low': 95.0,
+            "Close": 100.0,
+            "High": 105.0,
+            "Low": 95.0,
         }[k]
 
         # Map iloc[-1] to latest and iloc[-2] to prev
@@ -81,7 +81,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
 
         self.analyzer.data = mock_df
 
-        with patch('spyder_app.analyzer.ta') as mock_ta:
+        with patch("spyder_app.analyzer.ta") as mock_ta:
             # Mock ta functions
             mock_ta.trend.sma_indicator.return_value = MagicMock()
             mock_ta.momentum.rsi.return_value = MagicMock()
@@ -94,11 +94,11 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             self.analyzer.calculate_indicators()
 
             # Verify technicals are populated correctly
-            self.assertEqual(self.analyzer.technicals['Current_Price'], 100.0)
-            self.assertEqual(self.analyzer.technicals['SMA_50'], 100.0)
-            self.assertEqual(self.analyzer.technicals['RSI'], 50.0)
-            self.assertEqual(self.analyzer.technicals['Volatility_Band_Width'], 10.0)
-            self.assertEqual(self.analyzer.technicals['Latest_Date'], "2020-01-01")
+            self.assertEqual(self.analyzer.technicals["Current_Price"], 100.0)
+            self.assertEqual(self.analyzer.technicals["SMA_50"], 100.0)
+            self.assertEqual(self.analyzer.technicals["RSI"], 50.0)
+            self.assertEqual(self.analyzer.technicals["Volatility_Band_Width"], 10.0)
+            self.assertEqual(self.analyzer.technicals["Latest_Date"], "2020-01-01")
 
     def test_calculate_premium_indicators(self):
         # Setup mock DataFrame
@@ -111,7 +111,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
             "MACD_Signal": 1.0,
             "Stoch_K": 80.0,
             "Stoch_D": 75.0,
-            "ATR": 2.0
+            "ATR": 2.0,
         }[key]
 
         mock_df.iloc.__getitem__.return_value = mock_latest
@@ -120,7 +120,7 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         # Pre-populate technicals to check update behavior
         self.analyzer.technicals = {"Existing": "Data"}
 
-        with patch('spyder_app.analyzer.ta') as mock_ta:
+        with patch("spyder_app.analyzer.ta") as mock_ta:
             self.analyzer.calculate_premium_indicators()
 
             # Verify ta functions were called
