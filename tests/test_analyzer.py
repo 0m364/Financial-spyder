@@ -1,6 +1,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 import os
+import unittest
 
 # Mock dependencies
 sys.modules["requests"] = MagicMock()
@@ -13,8 +14,6 @@ sys.modules["ta"] = MagicMock()
 sys.modules["bs4"] = MagicMock()
 sys.modules["playwright"] = MagicMock()
 sys.modules["playwright.sync_api"] = MagicMock()
-
-import unittest
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,12 +83,12 @@ class TestTechnicalAnalyzer(unittest.TestCase):
 
         with patch("spyder_app.analyzer.ta") as mock_ta:
             # Mock ta functions
-            mock_ta.trend.sma_indicator.return_value = "SMA_50_SERIES"
-            mock_ta.momentum.rsi.return_value = "RSI_SERIES"
+            mock_ta.trend.sma_indicator.return_value = MagicMock()
+            mock_ta.momentum.rsi.return_value = MagicMock()
 
             mock_bb = MagicMock()
-            mock_bb.bollinger_hband.return_value = "BB_HIGH_SERIES"
-            mock_bb.bollinger_lband.return_value = "BB_LOW_SERIES"
+            mock_bb.bollinger_hband.return_value = MagicMock()
+            mock_bb.bollinger_lband.return_value = MagicMock()
             mock_ta.volatility.BollingerBands.return_value = mock_bb
 
             self.analyzer.calculate_indicators()

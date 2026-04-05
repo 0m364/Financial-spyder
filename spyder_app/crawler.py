@@ -138,22 +138,22 @@ class WebCrawler:
         Downloads content from a response object with a size limit.
         Returns content bytes or None if limit exceeded.
         """
-        with response:
-            response.raise_for_status()
+        # The response is assumed to be managed (opened and closed) by the caller.
+        response.raise_for_status()
 
-            content_chunks = []
-            downloaded_size = 0
-            max_size = 10 * 1024 * 1024  # 10 MB
+        content_chunks = []
+        downloaded_size = 0
+        max_size = 10 * 1024 * 1024  # 10 MB
 
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    downloaded_size += len(chunk)
-                    if downloaded_size > max_size:
-                        print(f"Skipping {url}: Response exceeded 10MB limit.")
-                        return None
-                    content_chunks.append(chunk)
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                downloaded_size += len(chunk)
+                if downloaded_size > max_size:
+                    print(f"Skipping {url}: Response exceeded 10MB limit.")
+                    return None
+                content_chunks.append(chunk)
 
-            return b"".join(content_chunks)
+        return b"".join(content_chunks)
 
     def crawl(self):
         queue = [(self.start_url, 0)]
@@ -179,8 +179,6 @@ class WebCrawler:
                     continue
 
                 with response:
-                    response.raise_for_status()
-
                     content_type = response.headers.get("Content-Type", "")
                     if "text/html" not in content_type:
                         print(f"Skipping {url}: Unsupported Content-Type {content_type}")
@@ -262,8 +260,6 @@ class WebCrawler:
                 return
 
             with response:
-                response.raise_for_status()
-
                 content_type = response.headers.get("Content-Type", "")
                 if "text/html" not in content_type:
                     print(f"Skipping {news_url}: Unsupported Content-Type {content_type}")

@@ -167,33 +167,43 @@ class PremiumSpyder(FinancialSpyder):
         df = self.analyzer.data
 
         # --- EXPERIMENTAL CASINO PREDICTION MODELS ---
+        experimental_score = self._apply_martingale_proxy(df, experimental_score)
+        experimental_score = self._apply_gamblers_fallacy(df, experimental_score)
+        experimental_score = self._apply_fibonacci_scaling(df, experimental_score)
+        experimental_score = self._apply_kelly_criterion(df, experimental_score)
+        # --- END EXPERIMENTAL MODELS ---
 
-        # 1. Martingale Proxy: If we lost yesterday, double down (increase score).
-        # We need historical daily changes.
-        df = self.analyzer.data
+        self.analyzer.technicals["Experimental_Score"] = min(
+            max(experimental_score, 0), 100
+        )
+
+    def _apply_martingale_proxy(self, df, score):
+        """Martingale Proxy: If we lost yesterday, double down (increase score)."""
         if df is not None and not df.empty and len(df) >= 2:
             latest_close = df.iloc[-1]["Close"]
             prev_close = df.iloc[-2]["Close"]
             if latest_close < prev_close:
-                experimental_score += 10  # Double down on the dip!
+                score += 10  # Double down on the dip!
                 self.analyzer.technicals["Martingale_Active"] = True
             else:
                 self.analyzer.technicals["Martingale_Active"] = False
+        return score
 
-        # 2. Gambler's Fallacy (Monte Carlo Fallacy):
-        # "It's gone down 3 days in a row, it HAS to go up now!"
+    def _apply_gamblers_fallacy(self, df, score):
+        """Gambler's Fallacy (Monte Carlo Fallacy): 'It's gone down 3 days in a row, it HAS to go up now!'"""
         if df is not None and not df.empty and len(df) >= 4:
             c1 = df.iloc[-1]["Close"] < df.iloc[-2]["Close"]
             c2 = df.iloc[-2]["Close"] < df.iloc[-3]["Close"]
             c3 = df.iloc[-3]["Close"] < df.iloc[-4]["Close"]
             if c1 and c2 and c3:
-                experimental_score += 20  # Overdue for a win!
+                score += 20  # Overdue for a win!
                 self.analyzer.technicals["Gamblers_Fallacy_Triggered"] = True
             else:
                 self.analyzer.technicals["Gamblers_Fallacy_Triggered"] = False
+        return score
 
-        # 3. Fibonacci Sequence Scaling (Proxy):
-        # Scale based on consecutive losing days.
+    def _apply_fibonacci_scaling(self, df, score):
+        """Fibonacci Sequence Scaling (Proxy): Scale based on consecutive losing days."""
         fib_seq = [1, 1, 2, 3, 5, 8, 13]
         if df is not None and not df.empty:
             consecutive_losses = 0
@@ -203,18 +213,16 @@ class PremiumSpyder(FinancialSpyder):
                 else:
                     break
             if consecutive_losses > 0 and consecutive_losses < len(fib_seq):
-                experimental_score += (
-                    fib_seq[consecutive_losses] * 2
-                )  # Increase bet size
+                score += fib_seq[consecutive_losses] * 2  # Increase bet size
                 self.analyzer.technicals["Fibonacci_Multiplier"] = fib_seq[
                     consecutive_losses
                 ]
             else:
                 self.analyzer.technicals["Fibonacci_Multiplier"] = 0
+        return score
 
-        # 4. Kelly Criterion Proxy:
-        # f* = p - (q / b)
-        # We'll estimate win probability (p) from the last 30 days.
+    def _apply_kelly_criterion(self, df, score):
+        """Kelly Criterion Proxy: f* = p - (q / b)"""
         if df is not None and len(df) >= 30:
             last_30 = df.tail(30)
             wins = (last_30["Close"].diff() > 0).sum()
@@ -224,10 +232,6 @@ class PremiumSpyder(FinancialSpyder):
             kelly_f = p - q
             # If kelly_f > 0, we have an edge. Scale score by it.
             if kelly_f > 0:
-                experimental_score += kelly_f * 20  # Max 20 points from Kelly
+                score += kelly_f * 20  # Max 20 points from Kelly
             self.analyzer.technicals["Kelly_Criterion_f"] = kelly_f
-
-        # --- END EXPERIMENTAL MODELS ---
-        self.analyzer.technicals["Experimental_Score"] = min(
-            max(experimental_score, 0), 100
-        )
+        return score
