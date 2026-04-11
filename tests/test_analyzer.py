@@ -48,6 +48,17 @@ class TestTechnicalAnalyzer(unittest.TestCase):
         mock_ticker_obj.history.assert_called_with(period="1y")
 
     @patch("spyder_app.analyzer.yf.Ticker")
+    def test_fetch_history_exception(self, mock_ticker_class):
+        # Configure the mock to raise an exception when instantiated
+        mock_ticker_class.side_effect = Exception("Mocked Exception")
+
+        # Call fetch_history
+        result = self.analyzer.fetch_history(period="1y")
+
+        # Verify the result is False
+        self.assertFalse(result)
+
+    @patch("spyder_app.analyzer.yf.Ticker")
     def test_calculate_indicators(self, mock_ticker_class):
         # Setup mock DataFrame
         mock_df = MagicMock()
