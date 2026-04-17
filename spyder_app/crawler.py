@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from collections import deque
 import time
 import socket
 import ipaddress
@@ -156,10 +157,10 @@ class WebCrawler:
         return b"".join(content_chunks)
 
     def crawl(self):
-        queue = [(self.start_url, 0)]
+        queue = deque([(self.start_url, 0)])
 
         while queue and self.page_count < self.max_pages:
-            url, depth = queue.pop(0)
+            url, depth = queue.popleft()
 
             if url in self.visited:
                 continue
