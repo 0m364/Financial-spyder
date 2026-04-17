@@ -37,9 +37,8 @@ class Reporter:
             if value[0] in dangerous_chars or (
                 stripped_value and stripped_value[0] in dangerous_chars
             ):
-            # Check if the string starts with a dangerous character,
-            # either absolutely or after stripping leading whitespace.
-            if value[0] in dangerous_chars or value.lstrip()[0:1] in dangerous_chars:
+                # Check if the string starts with a dangerous character,
+                # either absolutely or after stripping leading whitespace.
                 return "'" + value
         return value
 
