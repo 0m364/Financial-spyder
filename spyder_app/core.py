@@ -204,6 +204,12 @@ class PremiumSpyder(FinancialSpyder):
 
     def _apply_fibonacci_scaling(self, df, score):
         """Fibonacci Sequence Scaling (Proxy): Scale based on consecutive losing days."""
+        # Scale score based on golden ratio if price is near an arbitrary fibonacci level
+        # For simplicity, we just use the modulo of the current price
+        current_price = self.analyzer.technicals.get("Current_Price", 0)
+        if current_price == 0:
+            return score
+
         fib_seq = [1, 1, 2, 3, 5, 8, 13]
         if df is not None and not df.empty:
             consecutive_losses = 0
