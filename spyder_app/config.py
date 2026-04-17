@@ -20,6 +20,7 @@ BB_WINDOW = 20
 BB_STD_DEV = 2
 
 # Premium Analysis Settings
+PREMIUM_HISTORY_LIMIT = "10y"
 MACD_FAST = 12
 MACD_SLOW = 26
 MACD_SIGNAL = 9

@@ -5,7 +5,7 @@ A robust web crawler and financial analysis tool that extracts corporate data, p
 ## Features
 
 *   **Web Crawling**: Crawls websites to extract headlines and corporate profiles with depth and page limits.
-*   **Historical Data Analysis**: Fetches maximum historical stock data using `yfinance` to "know every move the market ever made" for a given ticker.
+*   **Historical Data Analysis**: Fetches extensive historical stock data (up to 10 years for premium users) using `yfinance` to analyze market moves for a given ticker.
 *   **Technical Analysis**: Calculates key indicators like SMA (50/200), RSI, and Volatility Bands.
 *   **Sentiment Analysis**: Analyzes extracted headlines to determine market sentiment.
 *   **AI Analyst Integration**: Generates a detailed `ai_briefing.txt` prompt containing all gathered data (technicals + sentiment), optimized for LLMs (ChatGPT, Gemini, etc.) to predict future movement.

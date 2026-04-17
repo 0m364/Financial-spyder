@@ -22,7 +22,7 @@ class TechnicalAnalyzer:
         self.data = None
         self.technicals = {}
 
-    def fetch_history(self, period="max"):
+    def fetch_history(self, period="1y"):
         print(f"Fetching historical data for {self.ticker}...")
         try:
             ticker_obj = yf.Ticker(self.ticker)

@@ -87,7 +87,7 @@ class PremiumSpyder(FinancialSpyder):
         )
 
     def get_history_period(self):
-        return "max"
+        return config.PREMIUM_HISTORY_LIMIT
 
     def perform_advanced_analysis(self):
         print("Performing Premium Analysis...")

@@ -42,7 +42,7 @@ class TestSpyderApp(unittest.TestCase):
         )
         self.assertEqual(spyder.get_tier_name(), "Premium")
         self.assertEqual(spyder.max_depth, config.PREMIUM_MAX_DEPTH)
-        self.assertEqual(spyder.get_history_period(), "max")
+        self.assertEqual(spyder.get_history_period(), config.PREMIUM_HISTORY_LIMIT)
 
     def test_technical_analyzer_fetch_history_empty(self):
         analyzer = TechnicalAnalyzer("TEST")
